@@ -11,7 +11,14 @@ class Route
   end
 
   def run(req, res)
-    @controller.new(req, res).invoke_action(@action)
+    match_data = @pattern.match(req.path)
+
+    params = {}
+    match_data.names.each do |name|
+      params[name.to_sym] = match_data[name]
+    end
+
+    @controller.new(req, res, params).invoke_action(@action)
   end
 end
 
@@ -21,17 +28,17 @@ class Router
   end
 
   def add_route(route)
-    opts = {
-      method: method,
-      pattern: pattern,
-      controller: controller_class,
-      action: action_name
-    }
-    @routes << Route.new(opts)
+    @routes << route
   end
 
   [:get, :post, :put, :delete].each do |method|
-    define_method(method, pattern, controller_class, action_name) do
+    define_method(method) do |pattern, controller_class, action_name|
+      opts = {
+        method: method,
+        pattern: pattern,
+        controller: controller_class,
+        action: action_name
+      }
       add_route(Route.new(opts))
     end
   end
@@ -41,7 +48,7 @@ class Router
   end
 
   def run(req, res)
-    (route = match(req)) ? route.run || (res.status = 404)
+    (route = match(req)) ? route.run(req, res) : (res.status = 404)
   end
 
   def draw(&block)
