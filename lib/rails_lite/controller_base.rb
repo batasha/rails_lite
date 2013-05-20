@@ -28,6 +28,11 @@ class ControllerBase
     view_path = self.class.underscore
     view_path.strip! "_controller"
     path = "/views/#{view_path}/#{file}.html.erb"
-    ERB.new(File.read(path)).result(binding)
+    render_content(ERB.new(File.read(path)).result(binding), 'text/html')
+  end
+
+  def invoke_action(action_name)
+    self.send(action_name)
+    render(action_name) unless @response_built
   end
 end

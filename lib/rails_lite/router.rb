@@ -9,6 +9,10 @@ class Route
   def matches?(req)
     req.path =~ @pattern && req.request_method.downcase.to_sym == @method
   end
+
+  def run(req, res)
+    @controller.new(req, res).invoke_action(@action)
+  end
 end
 
 class Router
@@ -30,5 +34,17 @@ class Router
     define_method(method, pattern, controller_class, action_name) do
       add_route(Route.new(opts))
     end
+  end
+
+  def match(req)
+    @routes.detect { |route| route.matches?(req) }
+  end
+
+  def run(req, res)
+    (route = match(req)) ? route.run || (res.status = 404)
+  end
+
+  def draw(&block)
+    instance_eval(&block)
   end
 end
